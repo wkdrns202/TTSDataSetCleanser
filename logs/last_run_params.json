@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-02-10T17:54:26.777711",
+  "whisper_model": "medium",
+  "device": "cuda",
+  "search_window": 25,
+  "skip_penalty": 0.01,
+  "match_threshold": 0.5,
+  "consec_fail_limit": 10,
+  "audio_pad_ms": 100,
+  "min_gap_for_pad_ms": 20,
+  "fade_ms": 10,
+  "total_target_lines": 4399,
+  "total_matched": 4270,
+  "total_skipped": 130,
+  "match_rate": 97.07,
+  "script_filter": null
+}

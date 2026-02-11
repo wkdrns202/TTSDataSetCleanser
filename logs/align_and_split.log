@@ -1,0 +1,132 @@
+2026-02-10 16:27:28,844 [INFO] Checkpoint cleared — starting fresh
+2026-02-10 16:27:28,883 [INFO] [cuda] Loading Whisper model (medium)...
+2026-02-10 16:27:36,753 [INFO] Found 20 audio files across 5 scripts
+2026-02-10 16:27:36,759 [INFO] 
+==================================================
+2026-02-10 16:27:36,759 [INFO] Script_1: 984 total lines (enc: utf-8-sig)
+2026-02-10 16:27:36,759 [INFO]   Audio files: 3
+2026-02-10 16:27:36,759 [INFO]   Audio covers lines: 1-300 (300 lines)
+2026-02-10 16:27:36,759 [INFO]   [1/3] Script_1_1-122.wav
+2026-02-10 16:27:36,759 [INFO]     Filename range: 1-122, Current line: 1
+2026-02-10 16:29:40,860 [INFO]     173 Whisper segments
+2026-02-10 16:29:53,255 [INFO]     Matched: 122, Script total so far: 122
+2026-02-10 16:29:53,255 [INFO]   [2/3] Script_1_123-220.wav
+2026-02-10 16:29:53,255 [INFO]     Filename range: 123-220, Current line: 123
+2026-02-10 16:31:27,599 [INFO]     141 Whisper segments
+2026-02-10 16:31:36,994 [INFO]     Matched: 97, Script total so far: 219
+2026-02-10 16:31:36,995 [INFO]   [3/3] Script_1_221-300.wav
+2026-02-10 16:31:36,995 [INFO]     Filename range: 221-300, Current line: 221
+2026-02-10 16:32:53,646 [INFO]     96 Whisper segments
+2026-02-10 16:33:01,603 [INFO]     Matched: 80, Script total so far: 299
+2026-02-10 16:33:01,603 [INFO]   Script_1 DONE: 299/300 (99.7%)
+2026-02-10 16:33:01,614 [INFO] 
+==================================================
+2026-02-10 16:33:01,614 [INFO] Script_2: 1416 total lines (enc: utf-8-sig)
+2026-02-10 16:33:01,614 [INFO]   Audio files: 6
+2026-02-10 16:33:01,615 [INFO]   Audio covers lines: 1-1416 (1416 lines)
+2026-02-10 16:33:01,615 [INFO]   [1/6] Script_2_1-162.wav
+2026-02-10 16:33:01,615 [INFO]     Filename range: 1-162, Current line: 1
+2026-02-10 16:36:04,678 [INFO]     221 Whisper segments
+2026-02-10 16:36:41,519 [INFO]     Matched: 159, Script total so far: 159
+2026-02-10 16:36:41,519 [INFO]   [2/6] Script_2_163-473.wav
+2026-02-10 16:36:41,519 [INFO]     Filename range: 163-473, Current line: 163
+2026-02-10 16:42:01,910 [INFO]     481 Whisper segments
+2026-02-10 16:43:05,571 [INFO]     Matched: 290, Script total so far: 449
+2026-02-10 16:43:05,571 [INFO]   [3/6] Script_2_474-547.wav
+2026-02-10 16:43:05,571 [INFO]     Filename range: 474-547, Current line: 474
+2026-02-10 16:44:30,335 [INFO]     101 Whisper segments
+2026-02-10 16:44:46,945 [INFO]     Matched: 73, Script total so far: 522
+2026-02-10 16:44:46,945 [INFO]   [4/6] Script_2_548-891.wav
+2026-02-10 16:44:46,945 [INFO]     Filename range: 548-891, Current line: 548
+2026-02-10 16:50:12,100 [INFO]     431 Whisper segments
+2026-02-10 16:51:17,242 [INFO]     Matched: 307, Script total so far: 829
+2026-02-10 16:51:17,242 [INFO]   [5/6] Script_2_892-1301.wav
+2026-02-10 16:51:17,242 [INFO]     Filename range: 892-1301, Current line: 892
+2026-02-10 16:57:14,740 [INFO]     674 Whisper segments
+2026-02-10 16:58:19,017 [INFO]     Matched: 367, Script total so far: 1196
+2026-02-10 16:58:19,017 [INFO]   [6/6] Script_2_1302-1416.wav
+2026-02-10 16:58:19,017 [INFO]     Filename range: 1302-1416, Current line: 1302
+2026-02-10 17:00:03,782 [INFO]     150 Whisper segments
+2026-02-10 17:00:15,220 [INFO]     Matched: 112, Script total so far: 1308
+2026-02-10 17:00:15,220 [INFO]   Script_2 DONE: 1308/1416 (92.4%)
+2026-02-10 17:00:15,236 [INFO] 
+==================================================
+2026-02-10 17:00:15,236 [INFO] Script_3: 878 total lines (enc: utf-8-sig)
+2026-02-10 17:00:15,236 [INFO]   Audio files: 2
+2026-02-10 17:00:15,236 [INFO]   Audio covers lines: 1-878 (878 lines)
+2026-02-10 17:00:15,236 [INFO]   [1/2] Script_3_1-404.wav
+2026-02-10 17:00:15,236 [INFO]     Filename range: 1-404, Current line: 1
+2026-02-10 17:07:14,197 [INFO]     457 Whisper segments
+2026-02-10 17:08:00,662 [INFO]     Matched: 404, Script total so far: 404
+2026-02-10 17:08:00,663 [INFO]   [2/2] Script_3_405-878.wav
+2026-02-10 17:08:00,663 [INFO]     Filename range: 405-878, Current line: 405
+2026-02-10 17:15:10,670 [INFO]     552 Whisper segments
+2026-02-10 17:16:03,234 [INFO]     Matched: 469, Script total so far: 873
+2026-02-10 17:16:03,234 [INFO]   Script_3 DONE: 873/878 (99.4%)
+2026-02-10 17:16:03,258 [INFO] 
+==================================================
+2026-02-10 17:16:03,258 [INFO] Script_4: 1005 total lines (enc: utf-8-sig)
+2026-02-10 17:16:03,259 [INFO]   Audio files: 5
+2026-02-10 17:16:03,259 [INFO]   Audio covers lines: 1-1005 (1005 lines)
+2026-02-10 17:16:03,259 [INFO]   [1/5] Script_4_1-100.wav
+2026-02-10 17:16:03,259 [INFO]     Filename range: 1-100, Current line: 1
+2026-02-10 17:18:02,234 [INFO]     127 Whisper segments
+2026-02-10 17:18:15,135 [INFO]     Matched: 98, Script total so far: 98
+2026-02-10 17:18:15,135 [INFO]   [2/5] Script_4_101-621.wav
+2026-02-10 17:18:15,135 [INFO]     Filename range: 101-621, Current line: 101
+2026-02-10 17:28:19,438 [INFO]     647 Whisper segments
+2026-02-10 17:30:17,190 [INFO]     Matched: 519, Script total so far: 617
+2026-02-10 17:30:17,190 [INFO]   [3/5] Script_4_622-650.wav
+2026-02-10 17:30:17,190 [INFO]     Filename range: 622-650, Current line: 622
+2026-02-10 17:30:44,546 [INFO]     77 Whisper segments
+2026-02-10 17:30:49,705 [INFO]     Matched: 29, Script total so far: 646
+2026-02-10 17:30:49,705 [INFO]   [4/5] Script_4_651-980.wav
+2026-02-10 17:30:49,705 [INFO]     Filename range: 651-980, Current line: 651
+2026-02-10 17:37:05,523 [INFO]     553 Whisper segments
+2026-02-10 17:38:12,435 [INFO]     Matched: 328, Script total so far: 974
+2026-02-10 17:38:12,435 [INFO]   [5/5] Script_4_981-1005.wav
+2026-02-10 17:38:12,435 [INFO]     Filename range: 981-1005, Current line: 981
+2026-02-10 17:38:34,731 [INFO]     29 Whisper segments
+2026-02-10 17:38:37,153 [INFO]     Matched: 24, Script total so far: 998
+2026-02-10 17:38:37,153 [INFO]   Script_4 DONE: 998/1005 (99.3%)
+2026-02-10 17:38:37,175 [INFO] 
+==================================================
+2026-02-10 17:38:37,176 [INFO] Script_5: 1019 total lines (enc: utf-8-sig)
+2026-02-10 17:38:37,176 [INFO]   Audio files: 4
+2026-02-10 17:38:37,176 [INFO]   Audio covers lines: 1-800 (800 lines)
+2026-02-10 17:38:37,176 [INFO]   [1/4] Script_5_1-43.wav
+2026-02-10 17:38:37,176 [INFO]     Filename range: 1-43, Current line: 1
+2026-02-10 17:39:29,244 [INFO]     44 Whisper segments
+2026-02-10 17:39:35,047 [INFO]     Matched: 43, Script total so far: 43
+2026-02-10 17:39:35,047 [INFO]   [2/4] Script_5_44-200.wav
+2026-02-10 17:39:35,047 [INFO]     Filename range: 44-200, Current line: 44
+2026-02-10 17:42:22,116 [INFO]     161 Whisper segments
+2026-02-10 17:42:41,963 [INFO]     Matched: 156, Script total so far: 199
+2026-02-10 17:42:41,963 [INFO]   [3/4] Script_5_201-541.wav
+2026-02-10 17:42:41,963 [INFO]     Filename range: 201-541, Current line: 201
+2026-02-10 17:48:08,139 [INFO]     393 Whisper segments
+2026-02-10 17:49:13,989 [INFO]     Matched: 339, Script total so far: 538
+2026-02-10 17:49:13,989 [INFO]   [4/4] Script_5_542-800.wav
+2026-02-10 17:49:13,989 [INFO]     Filename range: 542-800, Current line: 542
+2026-02-10 17:53:38,390 [INFO]     338 Whisper segments
+2026-02-10 17:54:26,732 [INFO]     Matched: 254, Script total so far: 792
+2026-02-10 17:54:26,732 [INFO]   Script_5 DONE: 792/800 (99.0%)
+2026-02-10 17:54:26,776 [INFO] 
+============================================================
+2026-02-10 17:54:26,776 [INFO] PIPELINE COMPLETE
+2026-02-10 17:54:26,776 [INFO]   Total target lines: 4399
+2026-02-10 17:54:26,776 [INFO]   Matched: 4270 (97.1%)
+2026-02-10 17:54:26,776 [INFO]   Skipped: 130
+2026-02-10 17:54:26,776 [INFO]   Output WAVs: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\wavs
+2026-02-10 17:54:26,776 [INFO]   Metadata: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\script.txt (4270 entries)
+2026-02-10 17:54:26,776 [INFO]   Skipped log: G:\Projects\AI_Research\TTSDataSetCleanser\logs\skipped_lines.log
+2026-02-10 17:54:26,776 [INFO] ============================================================
+2026-02-10 17:54:26,782 [INFO] Stage 1 checkpoint cleared (all scripts done)
+2026-02-10 17:54:26,782 [INFO] 
+Starting Stage 2: Post-processing...
+2026-02-10 17:54:26,799 [INFO] 
+==================================================
+2026-02-10 17:54:26,799 [INFO] STAGE 2: Post-processing 4274 WAVs
+2026-02-10 17:54:26,799 [INFO]   R6 envelope: 400ms pre-attack + 730ms tail
+2026-02-10 17:54:26,799 [INFO]   Fade: 10ms raised-cosine | Normalize: -1.0dB peak
+2026-02-10 17:56:38,163 [INFO] Stage 2 complete: 4274 processed, 0 errors

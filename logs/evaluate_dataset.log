@@ -1,0 +1,5 @@
+2026-02-11 13:46:57,182 [INFO] Curation: 74/4270 segments below sim 0.8 (1.7%)
+2026-02-11 13:46:57,956 [INFO] Curation complete: 74 WAVs moved to quarantine
+2026-02-11 13:46:57,956 [INFO] Remaining: 4196 segments
+2026-02-11 13:46:57,956 [INFO] New R1: 95.23%
+2026-02-11 13:46:57,956 [INFO] New R3: 95.16%

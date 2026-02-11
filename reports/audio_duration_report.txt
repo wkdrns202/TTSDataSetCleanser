@@ -1,0 +1,32 @@
+===============================================================================
+  TTS Dataset Audio Duration Report
+  Generated: 2026-02-08  |  Updated: 2026-02-10
+===============================================================================
+
+1. FULL DATASET (datasets/PreviousVersion/wavs/)
+   Files:          3,974
+   Total duration: 27,180.90s = 7h 33m 0.9s
+   Avg per file:   6.84s
+
+2. CLEANSED DATASET (datasets/PreviousVersion/cleansed/cleansed_wavs/)
+   Files:          1,719
+   Total duration: 11,102.74s = 3h 5m 2.7s
+   Avg per file:   6.46s
+
+   Breakdown:
+     QC-passed (original):       1,459 files, 9,516.46s = 2h 38m 36.5s
+     Script_5 experiment (new):    260 files, 1,586.28s = 0h 26m 26.3s
+                                 -----       ---------
+     Total:                      1,719 files, 11,102.74s = 3h 5m 2.7s
+
+3. COMPARISON
+   Files removed:     2,255 (56.7%)
+   Duration removed:  16,078.16s = 4h 27m 58.2s
+   Files retained:    43.3%
+   Duration retained: 40.8%
+
+4. CHANGE LOG
+   [2026-02-08] Initial measurement: 1,459 cleansed files (2h 38m 36.5s)
+   [2026-02-10] Added 260 Script_5 experiment files (lines 542-801)
+                New total: 1,719 files (3h 5m 2.7s)
+===============================================================================

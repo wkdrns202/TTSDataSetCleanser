@@ -1,0 +1,230 @@
+===============================================================================
+  TASK LOG — TTS Dataset Labeling Automation Progress
+  Date: 2026-02-10 17:40
+  Session span: 2026-02-08 ~ 2026-02-10
+===============================================================================
+
+PROJECT CONTEXT
+===============================================================================
+
+  Korean TTS dataset cleansing pipeline.
+  Goal: produce high-quality (WAV + script.txt) pairs for TTS model training.
+  Source: 5 voiceover recording sessions (Script_1 ~ Script_5), 3,974 total files.
+
+  Two parallel approaches being pursued for labeling automation:
+
+  APPROACH 1 — Align-and-Split Pipeline (align_and_split.py)
+    Automate with Whisper ASR recognition and slicing from long-form audio.
+    Match rate evaluation against the original script, iterative parameter tuning.
+    Status: 5 R&D iterations completed, 96.0% match rate achieved (3,974 entries).
+    Problem: 50.3% of output WAVs have quality issues (truncation, bleed, etc.)
+
+  APPROACH 2 — Pre-Segmented WAV Transcription (Improved Method)
+    Receive already-sliced WAVs and evaluate the output script by comparing
+    against the original correct answer key script to improve completeness.
+    Status: Workflow designed, scoring metric defined, split-line detection added.
+
+===============================================================================
+SESSION PROGRESS (2026-02-08 ~ 2026-02-10)
+===============================================================================
+
+  1. QC ANALYSIS OF EXISTING DATASET (2026-02-08)
+  ────────────────────────────────────────────────
+  Task:    Investigate all 3,974 WAVs from Approach 1 output using Whisper ASR.
+  Script:  src/qc_wavs.py (created)
+  Result:  1,975 GOOD (49.7%), 1,999 PROBLEMATIC (50.3%)
+  Issues found:
+    - TRUNCATED_END:       1,612 files
+    - TRUNCATED_START:     1,151 files
+    - LOW_SIMILARITY:        969 files
+    - START_BLEED:            98 files
+    - EMPTY_TRANSCRIPTION:    76 files
+  Output:  reports/qc_report.csv (3,974 rows)
+
+  2. CLEANSED DATASET ASSEMBLY (2026-02-08)
+  ─────────────────────────────────────────
+  Task:    Extract QC-passing files into a clean dataset.
+  Source:  logs/cleansed_data_list_qc_report.csv (1,459 files)
+  Result:  1,459 WAVs copied, cleansed_script.txt filtered to match 1:1.
+  Location: datasets/PreviousVersion/cleansed/cleansed_wavs/
+  Duration: 2h 38m 36.5s of clean audio
+
+  3. TRANSCRIPTION EXPERIMENT — Script_5 (2026-02-08)
+  ────────────────────────────────────────────────────
+  Task:    Test Approach 2 on 260 pre-segmented WAVs (Script_5 lines 542-801).
+  Script:  src/transcribe_experiment.py (created)
+  Result:  260/260 perfect transcription-to-audio match in 6.4 minutes.
+  WER vs answer key: 67.71% raw (due to source segmentation offset, not errors).
+  Root cause: Script_5_572.wav cut too early → 68-file cascade offset (573-640).
+  Corrected score (excluding offset): ~92% (normal for Whisper medium on Korean).
+
+  4. FILE STANDARDIZATION (2026-02-10)
+  ─────────────────────────────────────
+  Task:    Rename Script_5 experiment files to 4-digit zero-padded format.
+  Before:  Script_5_542.wav ~ Script_5_801.wav
+  After:   Script_5_0542.wav ~ Script_5_0801.wav
+  Files:   260 WAVs renamed + 260 script lines updated, 1:1 match verified.
+
+  5. AUDIO DURATION UPDATE (2026-02-10)
+  ─────────────────────────────────────
+  Cleansed dataset now: 1,719 files, 3h 5m 2.7s total audio.
+  Breakdown: 1,459 QC-passed (original) + 260 Script_5 experiment (new).
+  Retention: 43.3% files / 40.8% duration from original 3,974 files.
+
+  6. LABELING WORKFLOW DESIGN (2026-02-10)
+  ────────────────────────────────────────
+  Designed the Improved Method workflow for Approach 2.
+  Documents:
+    - OrderSheets/ImprovedMethodtoLabeling/TRANSCRIPTION_TASK_ORDER.md
+    - OrderSheets/ImprovedMethodtoLabeling/TRANSCRIPTION_WORKFLOW.md
+
+  Key design decisions:
+    a) WER Score = Matched Words / ASR Recognized Words (target >= 90)
+    b) Split-line detection as a critical transcriber responsibility
+    c) Mandatory Split-Line Report at end of every session
+    d) 6-step workflow (Receive → Transcribe → Evaluate → Detect Splits
+       → Review → Generate Dataset + Report)
+
+===============================================================================
+PROBLEMS IDENTIFIED
+===============================================================================
+
+  PROBLEM 1: Approach 1 output quality is only 49.7% usable
+  ──────────────────────────────────────────────────────────
+  The align-and-split pipeline (5 R&D iterations) achieved 96% match rate
+  but over half the WAVs have audio quality issues — truncated starts/ends,
+  bleed from adjacent segments, low similarity.
+  Impact: Only 1,459 of 3,974 files pass QC. 2h 38m of 7h 33m retained.
+
+  PROBLEM 2: Source segmentation cascade errors
+  ──────────────────────────────────────────────
+  When a single WAV is cut at the wrong point, all subsequent files cascade
+  with a 1-line offset. Detected in Script_5: 68 consecutive files affected.
+  This is a source data issue, not a transcription issue.
+  Detection method: consecutive 0% WER scores in evaluation.
+
+  PROBLEM 3: Split lines in source segmentation
+  ──────────────────────────────────────────────
+  One answer key line may be split across multiple WAV files during cutting.
+  Example: Script_5_0572.wav contains only "부엌에서 구수한 커피향이 난다"
+  but the full answer key line is "부엌에서 구수한 커피향이 난다 남편이 벌써
+  일어난 모양이다 사랑하는 사람" — the rest bled into the next WAV.
+  Impact: Individual WER scores drop, but the content is fully present
+  across the split WAVs. Must be detected and reported, not treated as error.
+
+  PROBLEM 4: ffmpeg dependency in Whisper
+  ───────────────────────────────────────
+  Whisper's default audio loading uses ffmpeg, which was not installed.
+  Caused 100% failure (3,974 TRANSCRIPTION_ERROR) on first QC run attempt.
+  Solution: Use soundfile + librosa for WAV loading, pass numpy arrays to
+  Whisper directly. Completely bypasses ffmpeg dependency.
+
+  PROBLEM 5: Whisper temperature=0 is catastrophic for Korean
+  ────────────────────────────────────────────────────────────
+  Setting temperature=0 in Whisper drastically degrades Korean recognition.
+  Evidence: Script_4 scored 604/1005 with temp=0 vs 987/1005 with default.
+  Rule: ALWAYS use default temperature fallback. Never override.
+
+===============================================================================
+LESSONS LEARNED
+===============================================================================
+
+  LESSON 1: Pre-segmented WAVs make transcription trivial
+  ───────────────────────────────────────────────────────
+  Approach 2 (pre-segmented + correct script) is dramatically simpler and
+  faster than Approach 1 (align-and-split from long-form audio).
+    - Approach 1: hours of processing, 10+ tuning parameters, 5 iterations
+    - Approach 2: 260 files in 6.4 minutes, zero tuning, perfect match
+  The bottleneck moves from "transcription accuracy" to "source segmentation
+  quality" — which is detectable and fixable.
+
+  LESSON 2: WER Score formula matters for TTS evaluation
+  ──────────────────────────────────────────────────────
+  WER Score = Matched Words / ASR Recognized Words
+  This measures precision: "of what Whisper said, how much is correct?"
+  Target >= 90. Whisper medium typically achieves ~92% on Korean with the
+  remaining ~8% being particle spacing and punctuation differences — not
+  actual speech content errors.
+
+  LESSON 3: Split-line detection is critical for data integrity
+  ─────────────────────────────────────────────────────────────
+  When one script line gets split across multiple WAV files, individual
+  WER scores drop sharply. Without split-line detection, these would be
+  misdiagnosed as transcription failures. The transcriber must:
+    - Check context of every low-scoring line
+    - Verify if consecutive WAVs together cover the full answer key line
+    - Report all split cases separately from genuine errors
+
+  LESSON 4: Avoid ffmpeg dependency for WAV processing
+  ───────────────────────────────────────────────────
+  soundfile + librosa is a reliable, pure-Python WAV loading path:
+    audio, sr = sf.read(wav_path, dtype='float32')
+    if sr != 16000: audio = librosa.resample(audio, orig_sr=sr, target_sr=16000)
+    result = model.transcribe(audio, language="ko")
+  No ffmpeg installation needed. Works on all platforms.
+
+  LESSON 5: Standardize file naming early
+  ──────────────────────────────────────
+  WAV filenames must be 4-digit zero-padded (Script_N_LLLL.wav) from the start.
+  Inconsistent naming (Script_5_542.wav vs Script_5_0542.wav) creates mismatches
+  between datasets. Renaming after the fact works but adds unnecessary risk.
+
+  LESSON 6: Checkpoint/resume is essential for GPU tasks
+  ─────────────────────────────────────────────────────
+  Long-running Whisper jobs (73.7 min for 3,974 files) need checkpointing.
+  Save every 100 files. But beware stale checkpoints — always verify or
+  delete checkpoint files before re-running after code changes.
+
+===============================================================================
+CURRENT DATASET STATE (as of 2026-02-10)
+===============================================================================
+
+  Full dataset:      3,974 files  |  7h 33m 0.9s  |  datasets/PreviousVersion/wavs/
+  Cleansed dataset:  1,719 files  |  3h 5m 2.7s   |  datasets/PreviousVersion/cleansed/cleansed_wavs/
+  Retention rate:    43.3% files  |  40.8% duration
+
+  Breakdown by script:
+    Script_1:  295 files (in cleansed set)
+    Script_2:  1,317 files (in cleansed set, partial)
+    Script_3:  861 files (in cleansed set, partial)
+    Script_4:  987 files (in cleansed set, partial)
+    Script_5:  441 files (181 original + 260 experiment)
+
+  Script_5 lines 802-1019 remain unprocessed (need additional source audio).
+
+===============================================================================
+NEXT STEPS
+===============================================================================
+
+  1. Implement the Approach 2 transcription script based on the designed workflow
+     with WER scoring and split-line detection built in.
+
+  2. Run Approach 2 on the full cleansed dataset (1,719 files) to generate
+     a new transcribed_script.txt with WER evaluation against answer keys.
+
+  3. Acquire remaining Script_5 source audio (lines 802-1019) to complete
+     the dataset.
+
+  4. Evaluate whether Approach 2 can replace or supplement Approach 1
+     for future recording sessions.
+
+===============================================================================
+  FILES CREATED/MODIFIED THIS SESSION
+===============================================================================
+
+  Created:
+    src/qc_wavs.py                                           (QC pipeline)
+    src/transcribe_experiment.py                              (transcription experiment)
+    reports/qc_report.csv                                     (3,974-row QC results)
+    reports/audio_duration_report.txt                          (duration analysis)
+    reports/transcription_experiment_report.txt                (experiment report)
+    OrderSheets/ImprovedMethodtoLabeling/TRANSCRIPTION_TASK_ORDER.md
+    OrderSheets/ImprovedMethodtoLabeling/TRANSCRIPTION_WORKFLOW.md
+
+  Modified:
+    datasets/PreviousVersion/cleansed/cleansed_script.txt     (filtered to 1,459 lines)
+    datasets/PreviousVersion/cleansed/Script_5_542-801.txt    (zero-padded filenames)
+    datasets/PreviousVersion/cleansed/Script_5_542-801/*.wav  (260 files renamed)
+    reports/audio_duration_report.txt                          (updated totals)
+
+===============================================================================

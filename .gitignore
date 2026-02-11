@@ -1,0 +1,38 @@
+# Audio datasets (large binary files — not for sharing)
+datasets/
+rawdata/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE / Tools
+.vscode/
+.vs/
+.idea/
+.claude/
+.cursorignore
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+nul
+
+# Checkpoint files (session-specific, regenerable)
+logs/eval_checkpoint.json
+logs/pipeline_checkpoint.json
+reports/qc_checkpoint.json

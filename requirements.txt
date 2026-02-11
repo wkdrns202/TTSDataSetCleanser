@@ -1,0 +1,8 @@
+openai-whisper
+pydub
+librosa
+soundfile
+tqdm
+torch
+numpy
+pandas

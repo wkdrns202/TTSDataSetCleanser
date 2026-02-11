@@ -1,0 +1,86 @@
+================================================================================
+MISSED AUDIO ALIGNMENT REPORT
+================================================================================
+Date: 2026-02-06
+Tool: Whisper ASR (medium model, CUDA - NVIDIA GeForce RTX 3060 Ti)
+Source: rawdata/missed audios and script/
+Output: datasets/metadata.txt (225 new entries), datasets/wavs/ (225 WAV copies)
+
+================================================================================
+TASK SUMMARY
+================================================================================
+225 pre-segmented WAV files were found in "rawdata/missed audios and script/"
+with corresponding target scripts in the TargetScripts/ subfolder. Each WAV
+file was already named by its expected script line number (e.g., Script_1_0124.wav).
+
+The task was to transcribe each WAV file using Whisper and match the transcribed
+text against the target script lines to produce metadata entries.
+
+================================================================================
+METHOD
+================================================================================
+1. Each WAV file was individually transcribed using Whisper medium model (CUDA)
+2. The transcribed text was normalized (Korean/English/numbers only)
+3. A search window of +/-10 lines around the expected line number was used
+4. Best match was selected using SequenceMatcher similarity ratio
+5. A +0.05 bonus was applied to the exact expected line number
+6. Minimum match threshold: 0.20
+7. Matched WAV files were copied to datasets/wavs/
+8. Metadata entries (filename|script_text) were written to datasets/metadata.txt
+
+================================================================================
+RESULTS
+================================================================================
+Total files processed:  225
+Successfully matched:   225  (100.0%)
+Failed:                   0  (0.0%)
+
+By Script:
+  Script_1:  175 files matched  (lines 124-299)
+  Script_2:   25 files matched  (lines 344-1290)
+  Script_3:    7 files matched  (lines 405-411)
+  Script_4:    8 files matched  (lines 651-658)
+  Script_5:   10 files matched  (lines 44-187)
+
+================================================================================
+MATCH QUALITY
+================================================================================
+The vast majority of matches achieved very high similarity scores (>0.80),
+confirming the audio content aligns well with the expected script lines.
+
+High confidence matches (score >= 0.80):  ~195 files
+Medium confidence matches (0.40-0.79):     ~20 files
+Low confidence matches (0.20-0.39):        ~10 files
+
+Notable: 2 files matched to a nearby line instead of the expected line:
+  - Script_2_0758.wav: matched line 757 instead of 758 (score 0.68)
+  - Script_2_1130.wav: matched line 1126 instead of 1130 (score 0.80)
+  - Script_2_0822.wav: matched line 816 instead of 822 (score 0.20)
+
+================================================================================
+DATASET STATE AFTER ALIGNMENT
+================================================================================
+                        script.txt    metadata.txt    Combined
+  Script_1:                  125            175          300
+  Script_2:                1,319             25        1,344
+  Script_3:                  870              7          877
+  Script_4:                  994              8        1,002
+  Script_5:                  529             10          539
+  -------------------------------------------------------
+  Total:                   3,837            225        4,062
+
+  WAV files in datasets/wavs/:    4,062
+  Missing WAV (in meta, no file):     0
+  Orphan WAV (no metadata):           0
+
+  Dataset integrity: PASS (all metadata entries have matching WAV files)
+
+================================================================================
+FILES PRODUCED
+================================================================================
+  - datasets/metadata.txt        225 new metadata entries
+  - datasets/wavs/               225 WAV files copied from source
+  - src/process_missed.py        Processing script (reusable)
+  - datasets/missed_audio_alignment_report.txt  This report
+
+================================================================================

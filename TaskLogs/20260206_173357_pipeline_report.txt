@@ -1,0 +1,20 @@
+================================================================================
+TTS DATASET PIPELINE REPORT
+================================================================================
+Date: 2026-02-06 17:33:57
+Tool: Whisper ASR (medium model, CUDA - NVIDIA GeForce RTX 3060 Ti)
+Config: window=25, threshold=0.25, penalty=0.01
+
+================================================================================
+DATASET VALIDATION
+================================================================================
+  Metadata entries:  4063
+  WAV files:         4063
+  Missing WAVs:      1
+  Orphan WAVs:       1
+  Integrity:         NEEDS ATTENTION
+
+  Orphan WAVs (moved to missed audios):
+    - Script_5_213.wav
+
+================================================================================
