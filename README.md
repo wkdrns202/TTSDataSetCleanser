@@ -123,7 +123,7 @@ pip install -r requirements.txt
 
 ## 핵심 교훈
 
-- **Whisper temperature=0 금지**: 한국어는 연음/경음화/음운변동으로 소리와 글자의 괴리가 크므로 deterministic decoding은 치명적. 반드시 default temperature fallback 사용.
+- **파라미터 적절히 분류**: 한국어 특성을 고려하여 파라미터 설계 필요.
 - **전방 탐색만 사용**: 후방 탐색은 한국어 조사/어미의 유사 패턴으로 중복 매칭 유발.
 - **탐색 범위 제한**: 100~500줄의 넓은 범위는 false-match cascading 야기. 25줄이 최적.
 - **GT-prompting 효과**: Ground-truth 텍스트를 initial_prompt로 사용하면 R1이 약 2배 향상 (34.7% -> 64.3%).
