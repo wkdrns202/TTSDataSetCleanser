@@ -1,44 +1,37 @@
-2026-02-20 21:42:54,191 [INFO] [cuda] Loading Whisper model (medium)...
-2026-02-20 21:43:08,197 [INFO] Found 4 audio files across 1 scripts
-2026-02-20 21:43:08,242 [INFO] 
+2026-04-04 09:15:44,762 [INFO] Checkpoint cleared — starting fresh
+2026-04-04 09:15:44,763 [INFO] [cpu] Loading Whisper model (medium)...
+2026-04-04 09:15:52,932 [INFO] Found 1 audio files across 1 scripts
+2026-04-04 09:15:52,934 [INFO]   Transcribing [1/1] Script_2_1-162.wav
+2026-04-04 09:42:28,155 [INFO]     222 Whisper segments
+2026-04-04 09:42:28,155 [INFO] Freeing Whisper model...
+2026-04-04 09:42:28,245 [INFO] 
 ==================================================
-2026-02-20 21:43:08,243 [INFO] Script_5: 1019 total lines (enc: utf-8-sig)
-2026-02-20 21:43:08,243 [INFO]   Audio files: 4
-2026-02-20 21:43:08,243 [INFO]   Audio covers lines: 1-800 (800 lines)
-2026-02-20 21:43:08,243 [INFO]   [1/4] Script_5_1-43.wav
-2026-02-20 21:43:08,243 [INFO]     Filename range: 1-43, Current line: 1
-2026-02-20 21:44:21,778 [INFO]     44 Whisper segments
-2026-02-20 21:44:27,442 [INFO]     Matched: 43, Script total so far: 43
-2026-02-20 21:44:27,442 [INFO]   [2/4] Script_5_44-200.wav
-2026-02-20 21:44:27,442 [INFO]     Filename range: 44-200, Current line: 44
-2026-02-20 21:47:07,128 [INFO]     161 Whisper segments
-2026-02-20 21:47:27,019 [INFO]     Matched: 156, Script total so far: 199
-2026-02-20 21:47:27,020 [INFO]   [3/4] Script_5_201-541.wav
-2026-02-20 21:47:27,020 [INFO]     Filename range: 201-541, Current line: 201
-2026-02-20 21:53:09,590 [INFO]     393 Whisper segments
-2026-02-20 21:54:21,325 [INFO]     Matched: 339, Script total so far: 538
-2026-02-20 21:54:21,325 [INFO]   [4/4] Script_5_542-800.wav
-2026-02-20 21:54:21,326 [INFO]     Filename range: 542-800, Current line: 542
-2026-02-20 21:59:00,794 [INFO]     350 Whisper segments
-2026-02-20 21:59:52,014 [INFO]     Matched: 247, Script total so far: 785
-2026-02-20 21:59:52,014 [INFO]   Script_5 DONE: 785/800 (98.1%)
-2026-02-20 21:59:52,028 [INFO] Preserving 1278 existing entries (non-Script_5_*)
-2026-02-20 21:59:52,042 [INFO] 
+2026-04-04 09:42:28,245 [INFO] Script_2: 1416 total lines (enc: utf-8-sig)
+2026-04-04 09:42:28,245 [INFO]   Audio files: 1
+2026-04-04 09:42:28,245 [INFO]   Audio covers lines: 1-162 (162 lines)
+2026-04-04 09:42:28,245 [INFO]   [1/1] Script_2_1-162.wav
+2026-04-04 09:42:28,245 [INFO]     Filename range: 1-162, Current line: 1
+2026-04-04 09:42:28,245 [INFO]     222 Whisper segments (cached)
+2026-04-04 09:43:01,549 [WARNING]   Cannot write Script_2_0154.wav (PermissionError) — skipping line 154
+2026-04-04 09:43:01,789 [INFO]     Matched: 158, Script total so far: 158
+2026-04-04 09:43:01,789 [INFO]   Script_2 DONE: 158/162 (97.5%)
+2026-04-04 09:43:01,814 [INFO] Preserving 2942 existing entries (non-Script_2_*)
+2026-04-04 09:43:01,833 [INFO] 
 ============================================================
-2026-02-20 21:59:52,042 [INFO] PIPELINE COMPLETE
-2026-02-20 21:59:52,042 [INFO]   Total target lines: 800
-2026-02-20 21:59:52,042 [INFO]   Matched: 785 (98.1%)
-2026-02-20 21:59:52,042 [INFO]   Skipped: 16
-2026-02-20 21:59:52,042 [INFO]   Output WAVs: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\wavs
-2026-02-20 21:59:52,042 [INFO]   Metadata: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\script.txt (2063 entries)
-2026-02-20 21:59:52,042 [INFO]   Skipped log: G:\Projects\AI_Research\TTSDataSetCleanser\logs\skipped_lines.log
-2026-02-20 21:59:52,042 [INFO] ============================================================
-2026-02-20 21:59:52,049 [INFO] Stage 1 checkpoint cleared (all scripts done)
-2026-02-20 21:59:52,049 [INFO] 
-Starting Stage 2: Post-processing...
-2026-02-20 21:59:52,065 [INFO] 
+2026-04-04 09:43:01,833 [INFO] PIPELINE COMPLETE
+2026-04-04 09:43:01,833 [INFO]   Total target lines: 162
+2026-04-04 09:43:01,833 [INFO]   Matched: 158 (97.5%)
+2026-04-04 09:43:01,833 [INFO]   Skipped: 3
+2026-04-04 09:43:01,833 [INFO]   Output WAVs: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\wavs
+2026-04-04 09:43:01,833 [INFO]   Metadata: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\script.txt (3100 entries)
+2026-04-04 09:43:01,833 [INFO]   Skipped log: G:\Projects\AI_Research\TTSDataSetCleanser\logs\skipped_lines.log
+2026-04-04 09:43:01,833 [INFO] ============================================================
+2026-04-04 09:43:01,840 [INFO] Stage 1 checkpoint cleared (all scripts done)
+2026-04-04 09:43:01,841 [INFO] 
+Starting Stage 2: Post-processing 3100 WAVs...
+2026-04-04 09:43:01,866 [INFO] 
 ==================================================
-2026-02-20 21:59:52,065 [INFO] STAGE 2: Post-processing 4203 WAVs
-2026-02-20 21:59:52,065 [INFO]   R6 envelope: 400ms pre-attack + 730ms tail
-2026-02-20 21:59:52,065 [INFO]   Fade: 10ms raised-cosine | Normalize: -1.0dB peak
-2026-02-20 22:02:13,579 [INFO] Stage 2 complete: 4203 processed, 0 errors
+2026-04-04 09:43:01,866 [INFO] STAGE 2: Post-processing 3100 WAVs
+2026-04-04 09:43:01,866 [INFO]   R6 envelope: 400ms pre-attack + 730ms tail
+2026-04-04 09:43:01,866 [INFO]   Fade: 10ms raised-cosine | Normalize: -1.0dB peak
+2026-04-04 09:44:51,588 [INFO] Stage 2 complete: 3100 processed, 0 errors

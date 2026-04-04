@@ -369,7 +369,7 @@ For each segment WAV:
 ```markdown
 ## Iteration N - [YYYY-MM-DD HH:MM]
 
-### Scores
+### Scores (Requirements)
 - R1 (Alignment Accuracy): ___%
 - R2 (Boundary Noise Pass): ___%
 - R3 (Combined Match Rate): ___%
@@ -563,7 +563,7 @@ Overall Score:
 |------|-------|
 | **OS** | Windows (Git Bash / MSYS2 for shell) |
 | **Filesystem** | G: drive is exFAT (no NTFS ACLs, possible PermissionError on file overwrites) |
-| **Python** | 3.11 at `C:\Users\Polymath\AppData\Local\Programs\Python\Python311\python.exe` |
+| **Python** | 3.11 at `G:\Python\Python311\python.exe` |
 | **GPU** | NVIDIA GeForce RTX 3060 Ti (CUDA available) |
 | **Whisper** | openai-whisper (pip), language="ko" |
 | **Audio output format** | 48000Hz, 24-bit, mono WAV |
