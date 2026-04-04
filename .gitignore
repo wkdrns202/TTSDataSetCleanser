@@ -2,8 +2,11 @@
 datasets/
 rawdata/
 
-# Paper (generated outputs, not source)
+# Paper / Reports / Documents (generated outputs, not for sharing)
 paper/
+docs/*.docx
+docs/*.pdf
+docs/~WRL*.tmp
 
 # Python
 __pycache__/
