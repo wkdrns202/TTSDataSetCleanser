@@ -62,9 +62,39 @@ from tqdm import tqdm
 BASE_DIR = os.getcwd()
 RAW_AUDIO_DIR = os.path.join(BASE_DIR, "rawdata", "audio")
 SCRIPT_DIR = os.path.join(BASE_DIR, "rawdata", "Scripts")
-OUTPUT_WAV_DIR = os.path.join(BASE_DIR, "datasets", "wavs")
-METADATA_PATH = os.path.join(BASE_DIR, "datasets", "script.txt")
+# Canonical output (read-only reference for evaluation/training)
+CANONICAL_WAV_DIR = os.path.join(BASE_DIR, "datasets", "wavs")
+CANONICAL_METADATA = os.path.join(BASE_DIR, "datasets", "script.txt")
+# Versioned output — set at runtime via _make_versioned_output_dir()
+OUTPUT_WAV_DIR = None  # populated in align_and_split()
+METADATA_PATH = None   # populated in align_and_split()
 LOG_DIR = os.path.join(BASE_DIR, "logs")
+
+
+def _make_versioned_output_dir(base_dir, tag=None):
+    """Create a versioned output directory: datasets/output_YYYYMMDD_vN/wavs.
+
+    Never overwrites existing runs. Bumps version number automatically.
+    Returns (wav_dir, metadata_path, run_dir).
+    """
+    date_str = datetime.datetime.now().strftime("%Y%m%d")
+    prefix = f"output_{date_str}"
+    if tag:
+        prefix = f"output_{tag}_{date_str}"
+
+    output_root = os.path.join(base_dir, "datasets")
+    version = 1
+    while True:
+        run_name = f"{prefix}_v{version}"
+        run_dir = os.path.join(output_root, run_name)
+        if not os.path.exists(run_dir):
+            break
+        version += 1
+
+    wav_dir = os.path.join(run_dir, "wavs")
+    metadata_path = os.path.join(run_dir, "script.txt")
+    os.makedirs(wav_dir, exist_ok=True)
+    return wav_dir, metadata_path, run_dir
 
 MODEL_SIZE = "medium"
 LANGUAGE = "ko"
@@ -79,7 +109,8 @@ MAX_MERGE = 5                # Maximum consecutive segments to merge
 AUDIO_PAD_MS = 50            # Base padding in ms (50ms proven optimal; 100ms caused bleed in Iter 4a)
 MIN_GAP_FOR_PAD_MS = 30      # If gap to neighbor < this, zero-pad on that edge (30ms for dense Korean)
 TAIL_EXTEND_MAX_MS = 400     # Max extra right padding to reach silence (prevents mid-speech cutoff)
-FADE_MS = 10                 # Fade-in/fade-out duration in ms
+FADE_MS = 10                 # Fade-in duration in ms
+FADE_OUT_MS = 5              # Fade-out duration in ms (shorter to preserve speech tail)
 # Stage 2: Post-processing / R6 Audio Envelope
 PREATTACK_SILENCE_MS = 400    # Pre-attack silence (ms) — generous for TTS training
 TAIL_SILENCE_MS = 730        # Tail silence (ms) — generous for TTS training
@@ -87,7 +118,7 @@ SILENCE_THRESHOLD_DB = -65   # RMS threshold for silence detection (dB, matches 
 RMS_WINDOW_MS = 10           # RMS sliding window size (ms)
 PEAK_NORMALIZE_DB = -1.0     # Peak normalization target (dB)
 ONSET_SAFETY_MS = 30         # Pull onset back by this much to preserve consonant attacks
-OFFSET_SAFETY_MS = 80        # Extend offset to preserve natural speech decay (80ms prevents bleed)
+OFFSET_SAFETY_MS = 120       # Extend offset to preserve natural speech decay (120ms for Korean endings)
 
 # Set up logging
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -165,12 +196,42 @@ def compute_rms_db(audio_segment):
     return 20 * math.log10(rms / 32768.0)
 
 
+
+# Korean formal endings that have natural micro-pauses which Whisper may
+# misinterpret as segment boundaries, causing word-final truncation.
+# Ordered longest-first so the most specific pattern matches first.
+KOREAN_FORMAL_ENDINGS = [
+    "것이었습니다", "것입니다",
+    "었습니다", "였습니다", "겠습니다",
+    "었습니까", "였습니까", "겠습니까",
+    "하십시오", "마십시오",
+    "습니다", "습니까",
+    "십시오", "십시요",
+    "읍시다", "합시다",
+    "으셨어요",
+    "으세요", "하세요",
+]
+
+
+def _gt_ends_with_formal(norm_gt):
+    """Check if normalized GT text ends with a Korean formal ending.
+    Returns the matched ending pattern or None."""
+    for ending in KOREAN_FORMAL_ENDINGS:
+        if norm_gt.endswith(ending):
+            return ending
+    return None
+
+
 def refine_boundaries_with_words(merged_segs, gt_text, normalize_fn):
     """Use word-level timestamps to find precise GT text boundaries.
 
     When a Whisper segment contains extra text (bleed from adjacent segments),
     this function finds where the GT text actually starts/ends within the
     segment's word list and returns tighter timestamps.
+
+    Includes protection against Korean formal ending truncation:
+    if the refined end boundary would cut off a formal ending (-습니다, etc.),
+    the boundary is extended to include the full ending.
 
     Returns (refined_start_sec, refined_end_sec) or None if no word data.
     """
@@ -227,6 +288,27 @@ def refine_boundaries_with_words(merged_segs, gt_text, normalize_fn):
     if best_start_sim > full_sim + 0.02 or best_end_sim > full_sim + 0.02:
         refined_start = all_words[best_start_idx].get('start', all_words[0].get('start'))
         refined_end = all_words[best_end_idx].get('end', all_words[-1].get('end'))
+
+        # --- Korean formal ending protection ---
+        # Check if the refined text is missing a formal ending that GT has.
+        # If so, extend end boundary to include more words.
+        formal_ending = _gt_ends_with_formal(norm_gt)
+        if formal_ending is not None:
+            refined_text = ''.join(
+                normalize_fn(w.get('word', ''))
+                for w in all_words[best_start_idx:best_end_idx + 1]
+            )
+            if not refined_text.endswith(formal_ending):
+                # Ending was truncated — extend to include remaining words
+                # up to the full segment boundary
+                extended_end_idx = len(all_words) - 1
+                refined_end = all_words[extended_end_idx].get(
+                    'end', all_words[-1].get('end'))
+                logger.debug(
+                    f"    Formal ending protection: extended end from word "
+                    f"{best_end_idx} to {extended_end_idx} "
+                    f"(preserving '{formal_ending}')")
+
         return refined_start, refined_end
 
     return None
@@ -278,12 +360,20 @@ def compute_rms_windowed(samples, sr=48000, window_ms=RMS_WINDOW_MS):
 
 
 def find_voice_onset_offset(samples, sr=48000, threshold_db=SILENCE_THRESHOLD_DB,
-                            window_ms=RMS_WINDOW_MS):
+                            window_ms=RMS_WINDOW_MS,
+                            sustained_silence_ms=1000):
     """Find voice onset and offset sample indices using RMS sliding window.
+
+    Offset detection requires sustained silence: after the last voiced window,
+    at least sustained_silence_ms of consecutive silence (avg < threshold_db)
+    must follow to confirm speech has truly ended. If speech resumes within
+    that window, the offset extends past it and checks again.
+
     Returns (onset_sample, offset_sample) where onset is the START of the first
     voiced window and offset is the END of the last voiced window."""
     window_size = int(sr * window_ms / 1000)
     rms_db = compute_rms_windowed(samples, sr, window_ms)
+    n_windows = len(rms_db)
 
     voiced = np.where(rms_db >= threshold_db)[0]
     if len(voiced) == 0:
@@ -291,10 +381,40 @@ def find_voice_onset_offset(samples, sr=48000, threshold_db=SILENCE_THRESHOLD_DB
         return 0, len(samples)
 
     onset_window = voiced[0]
-    offset_window = voiced[-1]
+
+    # --- Sustained silence check for offset ---
+    # Number of consecutive silent windows needed to confirm end-of-speech
+    silence_windows_needed = max(1, int(sustained_silence_ms / window_ms))
+
+    # Start from the last voiced window and scan forward
+    candidate_offset = voiced[-1]
+
+    # Walk forward from the candidate: verify silence is sustained
+    check_start = candidate_offset + 1
+    while check_start < n_windows:
+        # Count consecutive silent windows from check_start
+        silent_count = 0
+        for w in range(check_start, min(check_start + silence_windows_needed, n_windows)):
+            if rms_db[w] < threshold_db:
+                silent_count += 1
+            else:
+                # Speech resumed — extend offset to this voiced window
+                # and find the next silence gap after it
+                candidate_offset = w
+                break
+
+        if silent_count >= silence_windows_needed:
+            # Confirmed: sustained silence found, offset is valid
+            break
+        elif silent_count == min(check_start + silence_windows_needed, n_windows) - check_start:
+            # Reached end of audio with all silence — offset is valid
+            break
+        else:
+            # Speech resumed at candidate_offset, scan forward from there
+            check_start = candidate_offset + 1
 
     onset_sample = onset_window * window_size
-    offset_sample = min((offset_window + 1) * window_size, len(samples))
+    offset_sample = min((candidate_offset + 1) * window_size, len(samples))
 
     return onset_sample, offset_sample
 
@@ -352,8 +472,12 @@ def clear_checkpoint():
         os.remove(CHECKPOINT_PATH)
 
 
-def post_process_wavs(wav_dir=OUTPUT_WAV_DIR):
-    """Stage 2: Post-process all WAVs in-place.
+def post_process_wavs(wav_dir, wav_filter=None):
+    """Stage 2: Post-process WAVs in-place.
+
+    Args:
+        wav_dir: Directory containing output WAVs
+        wav_filter: If set, list of WAV basenames to process (others skipped)
 
     Processing order per requirements Section 9:
     1. Zero-crossing snap at start/end boundaries
@@ -365,6 +489,8 @@ def post_process_wavs(wav_dir=OUTPUT_WAV_DIR):
     7. Export as 48KHz, PCM_24, mono
     """
     wav_files = sorted(glob.glob(os.path.join(wav_dir, "*.wav")))
+    if wav_filter is not None:
+        wav_files = [f for f in wav_files if os.path.basename(f) in wav_filter]
     if not wav_files:
         logger.warning("No WAV files to post-process")
         return
@@ -372,7 +498,8 @@ def post_process_wavs(wav_dir=OUTPUT_WAV_DIR):
     sr_target = 48000
     preattack_samples = int(sr_target * PREATTACK_SILENCE_MS / 1000)   # 2400
     tail_samples = int(sr_target * TAIL_SILENCE_MS / 1000)             # 14400
-    fade_samples = int(sr_target * FADE_MS / 1000)                     # 480
+    fade_in_samples = int(sr_target * FADE_MS / 1000)                   # 480
+    fade_out_samples = int(sr_target * FADE_OUT_MS / 1000)             # 240
     
     logger.info(f"\n{'='*50}")
     logger.info(f"STAGE 2: Post-processing {len(wav_files)} WAVs")
@@ -401,7 +528,7 @@ def post_process_wavs(wav_dir=OUTPUT_WAV_DIR):
             # --- Step 1: Zero-crossing snap at boundaries ---
             if len(samples) > 960:  # need enough samples
                 new_start = find_nearest_zero_crossing(samples, 0, sr)
-                new_end = find_nearest_zero_crossing(samples, len(samples) - 1, sr)
+                new_end = len(samples) - 1  # Do NOT snap end — preserves speech tail
                 if new_end > new_start:
                     samples = samples[new_start:new_end + 1]
 
@@ -424,8 +551,8 @@ def post_process_wavs(wav_dir=OUTPUT_WAV_DIR):
                 continue
 
             # --- Step 4: Fade (on voiced region only) ---
-            actual_fade_in = min(fade_samples, len(voiced) // 4)
-            actual_fade_out = min(fade_samples, len(voiced) // 4)
+            actual_fade_in = min(fade_in_samples, len(voiced) // 4)
+            actual_fade_out = min(fade_out_samples, len(voiced) // 4)
 
             if actual_fade_in > 0:
                 fade_in_curve = make_raised_cosine_fade(actual_fade_in)
@@ -464,7 +591,8 @@ def post_process_wavs(wav_dir=OUTPUT_WAV_DIR):
 # CORE: ALIGN AND SPLIT
 # ============================================================
 
-def align_and_split(model_size=MODEL_SIZE, script_filter=None, resume=True):
+def align_and_split(model_size=MODEL_SIZE, script_filter=None, range_filter=None,
+                    resume=True, device_override=None):
     """Main alignment and splitting pipeline.
 
     Groups audio files by script number and processes each script sequentially,
@@ -475,13 +603,22 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, resume=True):
     Args:
         model_size: Whisper model size (tiny/base/small/medium/large)
         script_filter: If set, only process this script number (e.g., 2)
+        range_filter: If set, tuple (start, end) — only process the audio file
+                      whose filename range matches (e.g., (1, 162))
         resume: If True, resume from checkpoint if available
     """
+    global OUTPUT_WAV_DIR, METADATA_PATH
+
+    # Create versioned output directory — never overwrite existing data
+    tag = f"Script{script_filter}" if script_filter else None
+    OUTPUT_WAV_DIR, METADATA_PATH, run_dir = _make_versioned_output_dir(BASE_DIR, tag=tag)
+    logger.info(f"Output directory: {run_dir}")
+
     os.makedirs(OUTPUT_WAV_DIR, exist_ok=True)
     os.makedirs(LOG_DIR, exist_ok=True)
 
     # Initialize Whisper
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = device_override or ("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"[{device}] Loading Whisper model ({model_size})...")
     model = whisper.load_model(model_size, device=device)
 
@@ -501,6 +638,9 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, resume=True):
             continue
         if script_filter is not None and script_no != script_filter:
             continue
+        if range_filter is not None:
+            if (start_idx, end_idx) != range_filter:
+                continue
         if script_no not in scripts:
             scripts[script_no] = []
         scripts[script_no].append((start_idx, end_idx, audio_path))
@@ -537,7 +677,32 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, resume=True):
         if not checkpoint:
             f.write("AudioFile|ScriptLine|Reason|ScriptText|WhisperText\n")
 
-    # ---- Process each script ----
+    # ---- Pass 1: Transcribe all audio files ----
+    # Transcription is done first so we can free the Whisper model before
+    # loading large audio files for slicing (avoids MemoryError).
+    import gc
+    transcription_cache = {}  # key: audio_path -> segments list
+
+    for script_no in sorted(scripts.keys()):
+        if script_no in scripts_done:
+            continue
+        for file_idx, (start_idx, end_idx, audio_path) in enumerate(scripts[script_no]):
+            filename = os.path.basename(audio_path)
+            logger.info(f"  Transcribing [{file_idx+1}/{len(scripts[script_no])}] {filename}")
+            result = model.transcribe(audio_path, language=LANGUAGE, verbose=False,
+                                      fp16=(device == "cuda"), word_timestamps=True)
+            transcription_cache[audio_path] = result['segments']
+            logger.info(f"    {len(result['segments'])} Whisper segments")
+            del result
+
+    # Free Whisper model to reclaim memory before audio slicing
+    logger.info("Freeing Whisper model...")
+    del model
+    gc.collect()
+    if device == "cuda":
+        torch.cuda.empty_cache()
+
+    # ---- Pass 2: Alignment and slicing ----
     for script_no in sorted(scripts.keys()):
         # Skip already-completed scripts (checkpoint resume)
         if script_no in scripts_done:
@@ -578,14 +743,10 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, resume=True):
 
         for file_idx, (start_idx, end_idx, audio_path) in enumerate(audio_file_list):
             filename = os.path.basename(audio_path)
-
-            # Whisper transcription
+            segments = transcription_cache.get(audio_path, [])
             logger.info(f"  [{file_idx+1}/{len(audio_file_list)}] {filename}")
             logger.info(f"    Filename range: {start_idx}-{end_idx}, Current line: {current_script_line}")
-            result = model.transcribe(audio_path, language=LANGUAGE, verbose=False,
-                                      fp16=(device == "cuda"), word_timestamps=True)
-            segments = result['segments']
-            logger.info(f"    {len(segments)} Whisper segments")
+            logger.info(f"    {len(segments)} Whisper segments (cached)")
 
             if not segments:
                 logger.warning(f"    No segments in {filename}, skipping file")
@@ -726,11 +887,32 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, resume=True):
                     # if Whisper's end timestamp falls before the speech naturally
                     # decays. Extend up to TAIL_EXTEND_MAX_MS to reach silence,
                     # capped by the next segment start to prevent actual bleed.
+                    #
+                    # Korean formal ending protection: when GT ends with a formal
+                    # ending (-습니다, -겠습니다, etc.), the ending syllables may
+                    # be timestamped as part of the NEXT Whisper segment due to a
+                    # micro-pause (e.g., "었" [pause] "습니다"). In this case, the
+                    # ending is NOT bleed — it belongs to the current sentence.
+                    # We must extend PAST the next segment boundary to capture it.
+                    # Stage 2 post-processing will handle any actual bleed via
+                    # onset/offset detection and trimming.
+                    has_formal_ending = _gt_ends_with_formal(
+                        normalize_text(best_line_text)) is not None
+
                     next_seg_idx = seg_idx + best_merge_count
                     if next_seg_idx < len(segments):
                         next_start_ms = int(segments[next_seg_idx]['start'] * 1000)
                         right_gap = next_start_ms - raw_end_ms
-                        if right_gap < MIN_GAP_FOR_PAD_MS:
+
+                        if has_formal_ending:
+                            # For formal endings: extend aggressively past the
+                            # next segment boundary. The ending syllables (습니다,
+                            # 겠습니다, etc.) are typically 200-400ms and may be
+                            # in the next segment. Allow 650ms extension to
+                            # capture the full ending + ~150ms natural decay,
+                            # ignoring the next-segment-start cap.
+                            right_pad = 650
+                        elif right_gap < MIN_GAP_FOR_PAD_MS:
                             right_pad = 0
                         else:
                             safe_limit = max(0, right_gap - 20)
@@ -762,10 +944,27 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, resume=True):
                         except Exception:
                             pass
 
-                    try:
-                        chunk.export(out_path, format="wav")
-                    except PermissionError:
-                        logger.warning(f"  Cannot write {out_filename} (PermissionError)")
+                    export_ok = False
+                    for _attempt in range(3):
+                        try:
+                            chunk.export(out_path, format="wav")
+                            export_ok = True
+                            break
+                        except PermissionError:
+                            time.sleep(0.2)
+                            # Try removing the locked file
+                            try:
+                                os.remove(out_path)
+                            except Exception:
+                                pass
+
+                    if not export_ok:
+                        logger.warning(f"  Cannot write {out_filename} (PermissionError) — skipping line {best_line}")
+                        # Still advance past this match to avoid infinite loop
+                        current_script_line = best_line + 1
+                        for i in range(best_merge_count):
+                            used_segments.add(seg_idx + i)
+                        seg_idx += best_merge_count
                         continue
 
                     # --- Accept match ---
@@ -896,20 +1095,7 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, resume=True):
             'timestamp': datetime.datetime.now().isoformat()
         })
 
-    # ---- Save metadata ----
-    # When processing a single script, preserve existing entries for other scripts
-    if script_filter is not None and os.path.exists(METADATA_PATH):
-        script_prefix = f"Script_{script_filter}_"
-        existing_lines = []
-        with open(METADATA_PATH, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith(script_prefix):
-                    existing_lines.append(line)
-        logger.info(f"Preserving {len(existing_lines)} existing entries (non-{script_prefix}*)")
-        metadata_lines = existing_lines + metadata_lines
-
-    # Sort metadata by filename for consistency
+    # ---- Save metadata (versioned output — no merging with canonical) ----
     metadata_lines.sort()
 
     # Deduplicate
@@ -955,7 +1141,8 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, resume=True):
         "total_matched": total_matched,
         "total_skipped": total_skipped,
         "match_rate": round(match_rate, 2),
-        "script_filter": script_filter
+        "script_filter": script_filter,
+        "range_filter": list(range_filter) if range_filter else None
     }
     params_path = os.path.join(LOG_DIR, "last_run_params.json")
     with open(params_path, 'w', encoding='utf-8') as f:
@@ -965,9 +1152,15 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, resume=True):
     clear_checkpoint()
     logger.info("Stage 1 checkpoint cleared (all scripts done)")
 
-    # ---- Stage 2: Post-process all output WAVs ----
-    logger.info("\nStarting Stage 2: Post-processing...")
-    post_process_wavs(OUTPUT_WAV_DIR)
+    # ---- Stage 2: Post-process output WAVs ----
+    # Only post-process WAVs produced in this run (not the entire directory)
+    produced_wavs = set()
+    for ml in metadata_lines:
+        wav_name = ml.split("|")[0]
+        produced_wavs.add(wav_name)
+    wav_filter = produced_wavs if (range_filter is not None or script_filter is not None) else None
+    logger.info(f"\nStarting Stage 2: Post-processing {len(produced_wavs)} WAVs...")
+    post_process_wavs(OUTPUT_WAV_DIR, wav_filter=wav_filter)
 
     return total_matched, total_skipped, total_target_lines
 
@@ -981,8 +1174,12 @@ def main():
     parser.add_argument('--model', default=MODEL_SIZE,
                         choices=['tiny', 'base', 'small', 'medium', 'large'],
                         help='Whisper model size (default: medium)')
+    parser.add_argument('--device', default=None, choices=['cpu', 'cuda'],
+                        help='Force device (default: auto-detect)')
     parser.add_argument('--script', type=int, default=None,
                         help='Process only this script number (e.g., 2)')
+    parser.add_argument('--range', type=str, default=None, dest='range_str',
+                        help='Process only the audio file matching this line range (e.g., 1-162). Requires --script.')
     parser.add_argument('--dry-run', action='store_true',
                         help='Show what would be processed without running')
     parser.add_argument('--post-process-only', action='store_true',
@@ -991,7 +1188,19 @@ def main():
                         help='Resume from checkpoint if available (default: True)')
     parser.add_argument('--reset', action='store_true',
                         help='Clear checkpoint and start fresh')
+    parser.add_argument('-y', '--yes', action='store_true',
+                        help='Skip confirmation prompt')
     args = parser.parse_args()
+
+    # Parse --range into a tuple
+    range_filter = None
+    if args.range_str:
+        if args.script is None:
+            parser.error("--range requires --script to be set")
+        match = re.match(r"(\d+)-(\d+)$", args.range_str)
+        if not match:
+            parser.error(f"Invalid range format: '{args.range_str}' (expected e.g., 1-162)")
+        range_filter = (int(match.group(1)), int(match.group(2)))
 
     if args.reset:
         clear_checkpoint()
@@ -999,7 +1208,7 @@ def main():
 
     if args.post_process_only:
         logger.info("Running Stage 2 post-processing only...")
-        post_process_wavs(OUTPUT_WAV_DIR)
+        post_process_wavs(CANONICAL_WAV_DIR)
         return
 
     if args.dry_run:
@@ -1010,11 +1219,40 @@ def main():
             sno, start, end = parse_audio_filename(fn)
             if sno is not None:
                 if args.script is None or sno == args.script:
-                    print(f"  Script_{sno}: lines {start}-{end}  ({fn})")
+                    if range_filter is None or (start, end) == range_filter:
+                        print(f"  Script_{sno}: lines {start}-{end}  ({fn})")
         return
 
+    # Show target and confirm
+    audio_files = sorted(glob.glob(os.path.join(RAW_AUDIO_DIR, "*.wav")))
+    targets = []
+    for af in audio_files:
+        fn = os.path.basename(af)
+        sno, start, end = parse_audio_filename(fn)
+        if sno is not None:
+            if args.script is None or sno == args.script:
+                if range_filter is None or (start, end) == range_filter:
+                    targets.append((sno, start, end, fn))
+
+    if not targets:
+        logger.error("No matching audio files found for the given filters.")
+        return
+
+    print(f"\n{'='*50}")
+    print(f"Target audio files ({len(targets)}):")
+    for sno, start, end, fn in targets:
+        print(f"  Script_{sno}: lines {start}-{end}  ({fn})")
+    print(f"{'='*50}")
+    if not args.yes:
+        confirm = input("Proceed? [Y/n] ").strip().lower()
+        if confirm not in ('', 'y', 'yes'):
+            print("Aborted.")
+            return
+
     align_and_split(model_size=args.model, script_filter=args.script,
-                    resume=args.resume and not args.reset)
+                    range_filter=range_filter,
+                    resume=args.resume and not args.reset,
+                    device_override=args.device)
 
 
 if __name__ == "__main__":
